@@ -1,81 +1,76 @@
-# Agentic Universe: Junior SDE Take-Home (Data & Workflow)
+# Agentic Universe — Interaction Ledger & Reporting Pipeline (Assignment A)
 
-Thanks for your interest in Agentic Universe. We build AI voice agents for insurers, lenders and
-consumer brands across India and APAC. Our platform has three layers:
+A robust, idempotent, append-only data pipeline for outbound voice campaigns across India & APAC:
+- Ingests messy, multi-format lead uploads and telephony event streams.
+- Protects PII at rest using deterministic HMAC-SHA256 blind indexing and authenticated encryption.
+- Dynamically reconciles late-arriving leads and out-of-order call events.
+- Generates 5 verified contract reports with 100% idempotency.
 
-- **Data:** leads, call events, dispositions and the interaction ledger that every client report
-  is built on.
-- **Workflow:** campaigns, scheduling, dialling, retries and callbacks, all orchestrated durably.
-- **Application:** dashboards, consoles and APIs.
+---
 
-This take-home focuses on **data** and **workflow**. **Pick one assignment.** Don't do both.
+## Quickstart
 
-| | Assignment | You'll mostly be doing |
-|---|---|---|
-| **A** | [Interaction Ledger & Reporting Pipeline](assignment-a-data/README.md) | Messy-data ingestion, schema design, idempotent pipelines, exact metrics |
-| **B** | [Durable Campaign Dispatcher](assignment-b-workflow/README.md) | State machines, idempotency, failure handling, scheduling under constraints |
-
-Both are judged on the same bar. Pick the one that excites you more.
-
-## Ground rules
-
-- **Time box:** plan for about **6–8 focused hours**. You have **72 hours** from when you receive
-  this. We know you have a life. If you run out of time, stop and tell us in `SUBMISSION.md`
-  what you'd do next. A well-explained partial solution beats a rushed complete one.
-- **Language:** Python 3.11+. Use any libraries you like; list them in `requirements.txt`.
-- **AI tools** (Claude, Cursor, Copilot, ChatGPT...) are **allowed**, as they would be on the
-  job. You must fill in [`AI_USAGE.md`](AI_USAGE.md) honestly. In the follow-up interview we'll
-  ask you to walk through your code and change it live. Submit only code you understand and can
-  defend.
-- **Ambiguity is intentional in places.** When the spec doesn't decide something, make a
-  reasonable call and write it down in `SUBMISSION.md`. Don't wait for an answer from us.
-- **Synthetic data only.** Everything here is generated. No real customer data is involved.
-
-## Getting started
-
+### 1. (Optional) Virtual Environment Setup
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux / macOS:
+source .venv/bin/activate
+
+# Install test runner:
 pip install -r requirements.txt
-# then follow your chosen assignment's README
 ```
 
-`docker-compose.yml` starts a local Postgres if you want one (`docker compose up -d`). SQLite
-is equally acceptable.
+### 2. Run Automated Tests
+```bash
+# Run with Python's built-in test runner (no external dependencies):
+python -m unittest discover -s solution/tests
 
-## What to submit
+# Or with pytest:
+pytest solution/tests
+```
 
-1. Push your work to a **private** GitHub or GitLab repository. Start from this repo and keep
-   its structure. Put your code in `solution/` (or a similar top-level folder) and keep the
-   original files unmodified.
-2. Your repo must include:
-   - `SUBMISSION.md`: fill in the template provided
-   - `AI_USAGE.md`: fill in the template provided
-   - Exact setup and run commands that work from a clean clone
-   - Tests, runnable with one command (for example `pytest`)
-3. Give read access to **`[[REVIEWER_HANDLES]]`** and email the repo link to
-   **`[[SUBMISSION_EMAIL]]`** before the deadline.
+### 3. Run Pipeline Ingestion & Reporting
+```bash
+# 1. Ingest drops in sequence
+python -m solution.cli ingest data/drop_1
+python -m solution.cli ingest data/drop_2
 
-Please **don't** publish your solution publicly, and **don't** commit generated data, `.env`
-files, or databases.
+# 2. Generate final reports
+python -m solution.cli report --out reports
+```
 
-## What happens next
+---
 
-If your submission clears the bar, we'll schedule a **45-minute technical conversation**:
+## Project Structure
 
-- 15 min: you walk us through your design and the decisions in `SUBMISSION.md`
-- 20 min: we change a requirement and you extend your code live (AI tools allowed; screen
-  share)
-- 10 min: your questions for us
+```
+agentic-universe-assessment/
+├── solution/               # Complete implementation & test suite
+│   ├── cli.py              # CLI entrypoint (ingest, report)
+│   ├── config.py           # Paths, IST timezone, encryption keys
+│   ├── crypto.py           # HMAC-SHA256 blind index & PII encryption
+│   ├── normalizers.py      # Phone, date, decimal, enum, header sanitizers
+│   ├── schema_loader.py    # Workflow JSON schemas & disposition catalogue
+│   ├── db.py               # SQLite schema, WAL mode, transaction management
+│   ├── lead_ingest.py      # Lead CSV parser, rejection engine, duplicate merging
+│   ├── event_ingest.py     # Event JSONL parser, deduplication, orphan reconciliation
+│   ├── reporter.py         # Metrics calculation & 5 report generators
+│   └── tests/              # 19 automated unit and integration tests
+├── assignment-a-data/      # Schemas and synthetic data generator
+│   ├── schemas/            # motor_renewal.json, policy_feedback.json, dispositions.csv
+│   └── tools/              # generate_data.py
+├── SUBMISSION.md           # Architecture, design decisions, trade-offs, and benchmarks
+├── AI_USAGE.md             # AI usage disclosure
+├── requirements.txt        # Optional test dependencies (pytest)
+└── .gitignore              # Ignores generated data, databases, and caches
+```
 
-## What we look for
+---
 
-| Signal | What good looks like |
-|---|---|
-| Correctness | It produces the right answer on data and seeds you haven't seen |
-| Robustness | It behaves sensibly when inputs are dirty, things fail, or it's run twice |
-| Design | Clear data and state model; you can explain why it's safe |
-| Code quality | Readable, organised, tested where it matters |
-| Communication | Honest about trade-offs, assumptions and what's missing |
-| Ownership | You made decisions instead of waiting to be told |
+## Documentation Links
 
-Good luck. We're looking forward to reading your work.
+- [SUBMISSION.md](SUBMISSION.md) — Detailed architecture write-up, database schema, PII design, decisions & trade-offs, failure modes, and benchmarks.
+- [AI_USAGE.md](AI_USAGE.md) — Transparent AI usage disclosure.
+- [GLOSSARY.md](docs/GLOSSARY.md) — Domain vocabulary (Tenant, Workflow, Lead, Batch, Disposition, Overrides, Ledger).
